@@ -1,0 +1,53 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "ctlt/query-taxonomy-filter",
+	"version": "0.1.0",
+	"title": "Query Filter - Taxonomy",
+	"category": "widgets",
+	"icon": "filter",
+	"description": "Add taxonomy filtering to the WP Query block.",
+	"example": {},
+	"supports": {
+		"interactivity": true
+	},
+	"attributes": {
+		"selectedTaxonomyType": {
+            "type": "string",
+			"default": ""
+        },
+        "selectedTerms": {
+            "type": "array",
+			"default": []
+        },
+		"childOnly": {
+            "type": "boolean",
+			"default": false
+        },
+		"label": {
+            "type": "string",
+			"default": "All"
+        },
+		"instanceId": {
+            "type": "number",
+			"default": null
+        },
+		"inputType": {
+            "type": "string",
+			"default": "select"
+        },
+		"allTags": {
+            "type": "boolean",
+			"default": true
+        }
+    },
+	"usesContext": [
+		"queryId"
+	],
+	"textdomain": "ctlt-gf-saved-forms",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"viewScriptModule": "file:./view.js"
+}

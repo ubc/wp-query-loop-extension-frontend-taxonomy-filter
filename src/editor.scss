@@ -1,0 +1,19 @@
+/**
+ * The following styles get applied inside the editor only.
+ *
+ * Replace them with your own styles or remove the file completely.
+ */
+
+body .wp-query-filter__select{
+	pointer-events: none;
+}
+
+.wp-query-filter__checkboxes {
+	ul {
+		margin-left: 0;
+		padding-left: 0;
+		list-style: none;
+		margin-top: 0;
+		margin-bottom: 0;
+	}
+}
