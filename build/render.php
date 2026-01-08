@@ -75,13 +75,26 @@ if ( true === $child_only && 'category' === $taxonomy_type ) {
 
 $identifier = 'query-' . $block->context['queryId'] . '-term-' . $attributes['instanceId'];
 
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 if ( isset( $_GET[ $identifier ] ) && ! empty( $_GET[ $identifier ] ) ) {
-	$selected_term = explode( ',', wp_unslash( $_GET[ $identifier ] ) );
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.NonceVerification.Recommended
+	$selected_term_raw = explode( ',', wp_unslash( $_GET[ $identifier ] ) );
+	$selected_term_raw = array_map( 'absint', $selected_term_raw );
+
+	// For select input type, use single value (first item or empty string).
+	// For checkboxes, use array.
+	if ( 'select' === $input_type ) {
+		$selected_term = ! empty( $selected_term_raw ) ? $selected_term_raw[0] : '';
+	} else {
+		$selected_term = $selected_term_raw;
+	}
+} elseif ( 'select' === $input_type ) {
+	// For select input type, use empty string.
+	$selected_term = '';
 } else {
+	// For checkboxes, use empty array.
 	$selected_term = array();
 }
-
-$selected_term = array_map( 'absint', $selected_term );
 
 ?>
 <div
@@ -101,6 +114,7 @@ $selected_term = array_map( 'absint', $selected_term );
 			<?php foreach ( $selected_dropdown_term_ids as $key => $dropdown_term ) : ?>
 				<option
 					value="<?php echo esc_attr( $dropdown_term['id'] ); ?>"
+					<?php selected( $selected_term, $dropdown_term['id'] ); ?>
 				>
 					<?php echo esc_html( $dropdown_term['name'] ); ?>
 				</option>
@@ -118,7 +132,7 @@ $selected_term = array_map( 'absint', $selected_term );
 							value="<?php echo esc_attr( $dropdown_term['id'] ); ?>"
 							data-wp-on--change="actions.onChangeTerm"
 							class="wp-query-filter__checkbox"
-							<?php checked( in_array( $dropdown_term['id'], $selected_term ) ); ?>
+							<?php checked( in_array( $dropdown_term['id'], $selected_term, true ) ); ?>
 						/>
 						<?php echo esc_html( $dropdown_term['name'] ); ?>
 					</label>
