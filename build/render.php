@@ -18,11 +18,12 @@ $child_only       = boolval( $attributes['childOnly'] );
 $input_type       = sanitize_text_field( $attributes['inputType'] );
 $all_tags         = boolval( $attributes['allTags'] );
 
-if ( true === $child_only && 'category' === $taxonomy_type ) {
-	$selected_dropdown_term_ids = array();
+$selected_dropdown_term_ids = array();
 
-	array_map(
-		function ( $term_id ) use ( &$selected_dropdown_term_ids ) {
+// Build the options to display in the dropdown/checkboxes.
+if ( $child_only && 'category' === $taxonomy_type ) {
+	if ( ! empty( $attributes['selectedTerms'] ) && is_array( $attributes['selectedTerms'] ) ) {
+		foreach ( $attributes['selectedTerms'] as $term_id ) {
 			$terms = get_terms(
 				array(
 					'taxonomy' => 'category',
@@ -30,72 +31,54 @@ if ( true === $child_only && 'category' === $taxonomy_type ) {
 				)
 			);
 
-			$terms = array_map(
-				function ( $term ) {
-					return array(
-						'name' => $term->name,
-						'id'   => $term->term_id,
+			if ( is_array( $terms ) && ! empty( $terms ) && ! is_wp_error( $terms ) ) {
+				foreach ( $terms as $t ) {
+					$selected_dropdown_term_ids[] = array(
+						'name' => $t->name,
+						'id'   => $t->term_id,
 					);
-				},
-				$terms
-			);
-
-			if ( is_array( $terms ) && ! empty( $terms ) ) {
-				$selected_dropdown_term_ids = array_merge( $selected_dropdown_term_ids, $terms );
+				}
 			}
-		},
-		$attributes['selectedTerms']
-	);
-} elseif ( true === $all_tags && 'post_tag' === $taxonomy_type ) {
-	$terms = get_terms(
-		array(
-			'taxonomy' => 'post_tag',
-		)
-	);
-
-	$selected_dropdown_term_ids = array_map(
-		function ( $term ) {
-			return array(
-				'name' => $term->name,
-				'id'   => $term->term_id,
+		}
+	}
+} elseif ( $all_tags && 'post_tag' === $taxonomy_type ) {
+	$terms = get_terms( array( 'taxonomy' => 'post_tag' ) );
+	if ( is_array( $terms ) && ! empty( $terms ) && ! is_wp_error( $terms ) ) {
+		foreach ( $terms as $t ) {
+			$selected_dropdown_term_ids[] = array(
+				'name' => $t->name,
+				'id'   => $t->term_id,
 			);
-		},
-		$terms
-	);
-} else {
-	$selected_dropdown_term_ids = array_map(
-		function ( $term_id ) {
-			return array(
-				'name' => get_term( $term_id )->name,
+		}
+	}
+} elseif ( ! empty( $attributes['selectedTerms'] ) && is_array( $attributes['selectedTerms'] ) ) {
+	foreach ( $attributes['selectedTerms'] as $term_id ) {
+		$t = get_term( $term_id );
+		if ( $t && ! is_wp_error( $t ) ) {
+			$selected_dropdown_term_ids[] = array(
+				'name' => $t->name,
 				'id'   => $term_id,
 			);
-		},
-		$attributes['selectedTerms']
-	);
+		}
+	}
 }
 
-$identifier = 'query-' . $block->context['queryId'] . '-term-' . $attributes['instanceId'];
+$identifier    = 'query-' . $block->context['queryId'] . '-term-' . $attributes['instanceId'];
+$selected_term = ( 'select' === $input_type ) ? '' : array();
 
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-if ( isset( $_GET[ $identifier ] ) && ! empty( $_GET[ $identifier ] ) ) {
-	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.NonceVerification.Recommended
-	$selected_term_raw = explode( ',', wp_unslash( $_GET[ $identifier ] ) );
-	$selected_term_raw = array_map( 'absint', $selected_term_raw );
+if ( ! empty( $_GET[ $identifier ] ) ) {
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$selected_term_raw = wp_parse_id_list( wp_unslash( $_GET[ $identifier ] ) );
 
-	// For select input type, use single value (first item or empty string).
-	// For checkboxes, use array.
 	if ( 'select' === $input_type ) {
 		$selected_term = ! empty( $selected_term_raw ) ? $selected_term_raw[0] : '';
 	} else {
 		$selected_term = $selected_term_raw;
 	}
-} elseif ( 'select' === $input_type ) {
-	// For select input type, use empty string.
-	$selected_term = '';
-} else {
-	// For checkboxes, use empty array.
-	$selected_term = array();
 }
+
+// Compute the ARIA label / screen reader legend text.
 if ( ! empty( $accessible_label ) ) {
 	$computed_label = $accessible_label;
 } else {
@@ -109,18 +92,7 @@ if ( ! empty( $accessible_label ) ) {
 		}
 	}
 
-	if ( empty( $selected_term_names ) ) {
-		$terms_string = '';
-	} else {
-		$last_term = array_pop( $selected_term_names );
-		if ( empty( $selected_term_names ) ) {
-			$terms_string = $last_term;
-		} elseif ( count( $selected_term_names ) === 1 ) {
-			$terms_string = $selected_term_names[0] . ' and ' . $last_term;
-		} else {
-			$terms_string = implode( ', ', $selected_term_names ) . ', and ' . $last_term;
-		}
-	}
+	$terms_string   = wp_sprintf( '%l', $selected_term_names );
 	$computed_label = trim( 'Filter by ' . $terms_string );
 }
 
@@ -132,6 +104,7 @@ if ( ! empty( $accessible_label ) ) {
 	filter-id="<?php echo esc_attr( $attributes['instanceId'] ); ?>"
 	<?php echo wp_interactivity_data_wp_context( array( 'selectedTerm' => $selected_term ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> 
 >
+	<div class="live-region" aria-live="polite" aria-atomic="true"></div>
 	<?php if ( 'select' === $input_type ) : ?>
 		<label for="<?php echo esc_attr( $identifier ); ?>" class="screen-reader-text"><?php echo esc_html( $computed_label ); ?></label>
 		<select

@@ -15,6 +15,18 @@ const updateURLParameter = ( url, urlParameters ) => {
 	return newUrl;
 };
 
+const updateLiveRegion = ( element ) => {
+	const liveRegion = element.querySelector( '.live-region' );
+	
+	// Screen readers often suppress announcements if the new text is identical to the old text.
+	// We alternate by adding a non-breaking space at the end to force a perceived change.
+	if ( liveRegion.textContent === "Content updated." ) {
+		liveRegion.textContent = "Content updated.\u00A0";
+	} else {
+		liveRegion.textContent = "Content updated.";
+	}
+};
+
 store( 'ctlt-query-tax-filter', {
 	actions: {
 		onChangeTerm: ( event ) => {
@@ -67,6 +79,7 @@ store( 'ctlt-query-tax-filter', {
 
 			yield actions.navigate( navigateTo );
 
+			updateLiveRegion(ref);
 		},
 	  },
 	
