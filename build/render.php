@@ -104,7 +104,7 @@ if ( ! empty( $accessible_label ) ) {
 	filter-id="<?php echo esc_attr( $attributes['instanceId'] ); ?>"
 	<?php echo wp_interactivity_data_wp_context( array( 'selectedTerm' => $selected_term ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> 
 >
-	<div class="live-region" aria-live="polite" aria-atomic="true"></div>
+	<div class="live-region screen-reader-text" aria-live="polite" aria-atomic="true"></div>
 	<?php if ( 'select' === $input_type ) : ?>
 		<label for="<?php echo esc_attr( $identifier ); ?>" class="screen-reader-text"><?php echo esc_html( $computed_label ); ?></label>
 		<select
