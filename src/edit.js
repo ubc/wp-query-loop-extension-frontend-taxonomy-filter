@@ -35,7 +35,7 @@ import { Fragment } from '@wordpress/element';
 export default function Edit({ attributes, setAttributes }) {
 	const blockProps = useBlockProps();
 
-	const { selectedTerms, instanceId, selectedTaxonomyType, label, childOnly, inputType, allTags } = attributes;
+	const { selectedTerms, instanceId, selectedTaxonomyType, label, accessibleLabel, childOnly, inputType, allTags } = attributes;
 
 	const query = {
 		per_page: -1,
@@ -159,7 +159,16 @@ export default function Edit({ attributes, setAttributes }) {
 						/>
 					) : null}
 					<TextControl
-						label="Default Label"
+						label="Accessible Label"
+						value={accessibleLabel}
+						onChange={(newAccessibleLabel) => {
+							setAttributes({
+								accessibleLabel: newAccessibleLabel
+							})
+						}}
+					/>
+					<TextControl
+						label="Default 'All' Label"
 						value={label}
 						onChange={(newLabel) => {
 							setAttributes({

@@ -11,11 +11,12 @@
  * @package query-taxonomy-filters
  */
 
-$taxonomy_type = sanitize_title( $attributes['selectedTaxonomyType'] );
-$label         = sanitize_text_field( $attributes['label'] );
-$child_only    = boolval( $attributes['childOnly'] );
-$input_type    = sanitize_text_field( $attributes['inputType'] );
-$all_tags      = boolval( $attributes['allTags'] );
+$taxonomy_type    = sanitize_title( $attributes['selectedTaxonomyType'] );
+$label            = sanitize_text_field( $attributes['label'] );
+$accessible_label = sanitize_text_field( $attributes['accessibleLabel'] );
+$child_only       = boolval( $attributes['childOnly'] );
+$input_type       = sanitize_text_field( $attributes['inputType'] );
+$all_tags         = boolval( $attributes['allTags'] );
 
 if ( true === $child_only && 'category' === $taxonomy_type ) {
 	$selected_dropdown_term_ids = array();
@@ -95,6 +96,33 @@ if ( isset( $_GET[ $identifier ] ) && ! empty( $_GET[ $identifier ] ) ) {
 	// For checkboxes, use empty array.
 	$selected_term = array();
 }
+if ( ! empty( $accessible_label ) ) {
+	$computed_label = $accessible_label;
+} else {
+	$selected_term_names = array();
+	if ( ! empty( $attributes['selectedTerms'] ) && is_array( $attributes['selectedTerms'] ) ) {
+		foreach ( $attributes['selectedTerms'] as $term_id ) {
+			$t = get_term( $term_id );
+			if ( $t && ! is_wp_error( $t ) ) {
+				$selected_term_names[] = $t->name;
+			}
+		}
+	}
+
+	if ( empty( $selected_term_names ) ) {
+		$terms_string = '';
+	} else {
+		$last_term = array_pop( $selected_term_names );
+		if ( empty( $selected_term_names ) ) {
+			$terms_string = $last_term;
+		} elseif ( count( $selected_term_names ) === 1 ) {
+			$terms_string = $selected_term_names[0] . ' and ' . $last_term;
+		} else {
+			$terms_string = implode( ', ', $selected_term_names ) . ', and ' . $last_term;
+		}
+	}
+	$computed_label = trim( 'Filter by ' . $terms_string );
+}
 
 ?>
 <div
@@ -105,10 +133,13 @@ if ( isset( $_GET[ $identifier ] ) && ! empty( $_GET[ $identifier ] ) ) {
 	<?php echo wp_interactivity_data_wp_context( array( 'selectedTerm' => $selected_term ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> 
 >
 	<?php if ( 'select' === $input_type ) : ?>
+		<label for="<?php echo esc_attr( $identifier ); ?>" class="screen-reader-text"><?php echo esc_html( $computed_label ); ?></label>
 		<select
 			data-wp-on--change="actions.onChangeTerm"
 			data-wp-bind--value="context.selectedTerm"
 			class="wp-query-filter__select"
+			id="<?php echo esc_attr( $identifier ); ?>"
+			aria-label="<?php echo esc_attr( $computed_label ); ?>"
 		>
 			<option value=""><?php echo esc_html( $label ); ?></option>
 			<?php foreach ( $selected_dropdown_term_ids as $key => $dropdown_term ) : ?>
@@ -123,10 +154,11 @@ if ( isset( $_GET[ $identifier ] ) && ! empty( $_GET[ $identifier ] ) ) {
 	<?php else : ?>
 		<div class="wp-query-filter__checkboxes">
 			<fieldset>
-				<legend class="wp-query-filter__legend visually-hidden">Taxonomy Filter, available terms in below list.</legend>
+				<legend class="wp-query-filter__legend screen-reader-text"><?php echo esc_html( $computed_label ); ?></legend>
 				<?php foreach ( $selected_dropdown_term_ids as $key => $dropdown_term ) : ?>
-					<label>
+					<label for="<?php echo esc_attr( $identifier . '-checkbox-' . $dropdown_term['id'] ); ?>">
 						<input
+							id="<?php echo esc_attr( $identifier . '-checkbox-' . $dropdown_term['id'] ); ?>"
 							type="checkbox"
 							name="<?php echo esc_attr( 'query-' . $attributes['instanceId'] . '-term[]' ); ?>"
 							value="<?php echo esc_attr( $dropdown_term['id'] ); ?>"
